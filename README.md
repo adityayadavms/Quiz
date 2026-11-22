@@ -1,5 +1,4 @@
-# Quiz Backend API — Integration Guide for the Flutter App
-
+# Quiz Backend API 
 This guide covers everything the Flutter app needs to talk to the quiz backend: the base URL, both endpoints, every field in each request and response, every error the server can return, and the recommended quiz flow on the client.
 
 > **TL;DR**
