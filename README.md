@@ -987,44 +987,6 @@ curl -X POST "http://localhost:4000/api/submit" \
 | Bad item shape | `"chosenOptionIndex": "1"` or a non-CUID `questionId` | `400 {"error":{"code":"BAD_ANSWER_ITEM","message":"each answer needs a cuid questionId and integer chosenOptionIndex"}}` |
 | Bad subtopic | `"subtopicId": "abc"` | `400 {"error":{"code":"BAD_SUBTOPIC_ID","message":"subtopicId must be a cuid"}}` |
 
----
-
-## 10. Gotchas & FAQ
-
-**Q: Can I show right or wrong immediately after each tap?**
-Not with the normal flow, because the client never has the answer key. Show feedback after submit. (If it's really needed, see the 1-item submit option at the end of §7.)
-
-**Q: Do I have to submit exactly 6 answers?**
-No. Any non-empty set of valid questions from this subtopic works. `score.total` equals however many you sent.
-
-**Q: The user skipped a question. What do I send?**
-Leave it out. `null` or `-1` will be rejected (`BAD_ANSWER_ITEM` / `INDEX_OUT_OF_RANGE`).
-
-**Q: Can I randomise the option order for display?**
-Yes, but keep a mapping from the displayed position back to the **original** index, and send the original index.
-
-**Q: Can I rely on `backup[0]` being the backup for `primary[0]`?**
-No. Always match by `familyId`. Many primaries have no backup.
-
-**Q: Is `results` in the same order as `primary`?**
-It's in the same order as **your `answers` array**. If you built `answers` from `primary` in order, then yes.
-
-**Q: `questionLatex` is empty. Is that a bug?**
-No. It's `""` for text-only questions. Render it only when it's non-empty, and always fall back to `questionText`.
-
-**Q: `chosenOptionIndex` is a `double` in my Dart code.**
-Make sure it's an `int`. `jsonEncode(1)` → `1` ✅, while a `String` `"1"` → `BAD_ANSWER_ITEM` ❌.
-
-**Q: Will the same subtopic always return the same questions?**
-Primaries come back sorted by difficulty, so they're stable unless content changes. Backup ordering isn't guaranteed. Don't cache question IDs across content updates. If you get `QUESTION_NOT_IN_SUBTOPIC` with IDs that used to work, refetch the pool.
-
-**Q: What is `sessionKey` for, and is it required?**
-It's optional and only used for analytics, to group a user's attempts. Generate one UUID v4 and reuse it for the session (or per install). It isn't authentication.
-
-**Q: Is there an endpoint to fetch past submissions?**
-Not yet. Keep `submissionId` and the results locally if the app needs a history screen.
-
----
 
 ### Endpoint summary
 
