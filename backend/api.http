@@ -1,0 +1,121 @@
+@base = http://localhost:4000
+
+### GET pool — normal request
+GET {{base}}/api/pool?subtopicId=clx9k2p0b0000abcd1234efgh
+
+### POST answer — correct
+POST {{base}}/api/answer
+Content-Type: application/json
+
+{
+  "questionId": "cmwnmpxod00089op5rvvsvw30",
+  "chosenOptionIndex": 1,
+  "sessionKey": "test-session-001"
+}
+
+### POST answer — wrong
+POST {{base}}/api/answer
+Content-Type: application/json
+
+{
+  "questionId": "cmwnmpxod00089op5rvvsvw30",
+  "chosenOptionIndex": 0,
+  "sessionKey": "test-session-002"
+}
+
+### POST answer — out of range
+POST {{base}}/api/answer
+Content-Type: application/json
+
+{
+  "questionId": "cmwnmpxod00089op5rvvsvw30",
+  "chosenOptionIndex": 99
+}
+
+### GET pool — bad subtopicId
+GET {{base}}/api/pool?subtopicId=notacuid
+
+### GET pool — missing subtopic
+GET {{base}}/api/pool?subtopicId=clx9k2p0b9999abcd1234efgh
+
+
+### submit — happy path (mixed correct/wrong)
+POST http://localhost:4000/api/submit
+Content-Type: application/json
+
+{
+  "subtopicId": "clx9k2p0b0000abcd1234efgh",
+  "sessionKey": "manual-test-submit-001",
+  "answers": [
+    { "questionId": "cmwnmpxod00089op5rvvsvw30", "chosenOptionIndex": 1 },
+    { "questionId": "cmwnmpxok00099op51d3vo7wr", "chosenOptionIndex": 0 },
+    { "questionId": "cmwnmpxop000a9op5tea0tcf4", "chosenOptionIndex": 2 }
+  ]
+}
+
+### submit — all correct
+POST http://localhost:4000/api/submit
+Content-Type: application/json
+
+{
+  "subtopicId": "clx9k2p0b0000abcd1234efgh",
+  "answers": [
+    { "questionId": "cmwnmpxod00089op5rvvsvw30", "chosenOptionIndex": 1 },
+    { "questionId": "cmwnmpxok00099op51d3vo7wr", "chosenOptionIndex": 0 }
+  ]
+}
+
+### submit — empty answers → 400 EMPTY_ANSWERS
+POST http://localhost:4000/api/submit
+Content-Type: application/json
+
+{ "subtopicId": "clx9k2p0b0000abcd1234efgh", "answers": [] }
+
+### submit — duplicate questionId → 400 DUPLICATE_QUESTION_ID
+POST http://localhost:4000/api/submit
+Content-Type: application/json
+
+{
+  "subtopicId": "clx9k2p0b0000abcd1234efgh",
+  "answers": [
+    { "questionId": "cmwnmpxod00089op5rvvsvw30", "chosenOptionIndex": 1 },
+    { "questionId": "cmwnmpxod00089op5rvvsvw30", "chosenOptionIndex": 2 }
+  ]
+}
+
+### submit — question not in subtopic → 404 QUESTION_NOT_IN_SUBTOPIC
+POST http://localhost:4000/api/submit
+Content-Type: application/json
+
+{
+  "subtopicId": "clx9k2p0b0000abcd1234efgh",
+  "answers": [
+    { "questionId": "clx9k2p0b9999abcd1234efgh0000", "chosenOptionIndex": 0 }
+  ]
+}
+
+### submit — index out of range → 400 INDEX_OUT_OF_RANGE, zero rows
+POST http://localhost:4000/api/submit
+Content-Type: application/json
+
+{
+  "subtopicId": "clx9k2p0b0000abcd1234efgh",
+  "answers": [
+    { "questionId": "cmwnmpxod00089op5rvvsvw30", "chosenOptionIndex": 99 }
+  ]
+}
+
+### submit — bad item shape → 400 BAD_ANSWER_ITEM
+POST http://localhost:4000/api/submit
+Content-Type: application/json
+
+{
+  "subtopicId": "clx9k2p0b0000abcd1234efgh",
+  "answers": [ { "questionId": "abc", "chosenOptionIndex": 1 } ]
+}
+
+### submit — bad subtopicId shape → 400 BAD_SUBTOPIC_ID
+POST http://localhost:4000/api/submit
+Content-Type: application/json
+
+{ "subtopicId": "notacuid", "answers": [ { "questionId": "cmwnmpxod00089op5rvvsvw30", "chosenOptionIndex": 1 } ] }

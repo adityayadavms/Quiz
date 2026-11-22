@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Small fixed sets: enums are fine ───
+enum Subject {
+  biology
+  physics
+  chemistry
+  mathematics
+}
+
+enum DifficultyLabel {
+  easy
+  medium
+  hard
+}
+
+enum QuestionRole {
+  primary
+  backup
+}
+
+// ─── Taxonomy: tables, because they grow ───
+model Chapter {
+  id      String  @id @default(cuid())
+  subject Subject
+  name    String
+  order   Int
+  topics  Topic[]
+
+  @@unique([subject, name])
+}
+
+model Topic {
+  id        String     @id @default(cuid())
+  chapterId String
+  chapter   Chapter    @relation(fields: [chapterId], references: [id])
+  name      String
+  order     Int
+  subtopics Subtopic[]
+}
+
+model Subtopic {
+  id        String     @id @default(cuid())
+  topicId   String
+  topic     Topic      @relation(fields: [topicId], references: [id])
+  name      String
+  order     Int
+  concepts  Concept[]
+  questions Question[]
+}
+
+model Concept {
+  id         String   @id @default(cuid())
+  subtopicId String
+  subtopic   Subtopic @relation(fields: [subtopicId], references: [id])
+  tag        String
+  name       String
+
+  @@unique([subtopicId, tag])
+}
+
+// ─── Questions: query-keys as columns, content as JSONB ───
+model Question {
+  id              String          @id @default(cuid())
+  subtopicId      String
+  subtopic        Subtopic        @relation(fields: [subtopicId], references: [id])
+  conceptTag      String
+  familyId        String          // siblings (primary + backups) share this
+  difficultyScore Int             // 1..100, the source of truth
+  difficultyLabel DifficultyLabel // derived from score, validated in seed
+  role            QuestionRole    @default(primary)
+  marks           Int             @default(1)
+  board           String
+  grade           Int
+  sourceType      String          @default("book_curated")
+
+  content Json // { questionText, questionLatex, options: string[] }
+  answer  Json // { correctOptionIndex, explanation }  ← NEVER selected on GET
+
+  attempts  Attempt[]
+  createdAt DateTime  @default(now())
+
+  @@index([subtopicId, role, difficultyScore]) // exact shape of pool query
+  @@index([familyId])                          // makes sibling lookups cheap
+}
+
+// ─── Attempts: write from day one ───
+model Attempt {
+  id                String   @id @default(cuid())
+  questionId        String
+  question          Question @relation(fields: [questionId], references: [id])
+  sessionKey        String?  // frontend-generated UUID, nullable (no auth yet)
+  submissionId      String?  // NEW: groups the N rows written by one /api/submit
+  subtopicId        String
+  chosenOptionIndex Int
+  isCorrect         Boolean
+  createdAt         DateTime @default(now())
+
+  @@index([questionId])
+  @@index([subtopicId])
+  @@index([sessionKey])
+  @@index([submissionId])    // NEW
+}
